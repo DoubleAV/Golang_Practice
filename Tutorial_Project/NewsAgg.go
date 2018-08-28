@@ -6,7 +6,10 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
+
+var wg sync.WaitGroup
 
 type SitemapIndex struct {
 	Locations []string `xml:"sitemap>loc"`
@@ -28,25 +31,42 @@ type NewsAggPage struct {
 	News  map[string]NewsMap
 }
 
+func newsRoutine(c chan News, Location string) {
+	defer wg.Done()
+	var n News
+	resp, _ := http.Get(Location)
+	bytes, _ := ioutil.ReadAll(resp.Body)
+	xml.Unmarshal(bytes, &n)
+	resp.Body.Close()
+
+	c <- n //send value of n over channel
+}
+
 func newsAggHandler(w http.ResponseWriter, r *http.Request) {
 	var s SitemapIndex
-	var n News
 	news_map := make(map[string]NewsMap)
 
 	resp, _ := http.Get("https://www.washingtonpost.com/news-sitemap-index.xml")
 	bytes, _ := ioutil.ReadAll(resp.Body)
 	xml.Unmarshal(bytes, &s)
+	resp.Body.Close()
+	queue := make(chan News, 30)
 
 	//index, value
 	for _, Location := range s.Locations {
-		resp, _ := http.Get(Location)
-		bytes, _ := ioutil.ReadAll(resp.Body)
-		xml.Unmarshal(bytes, &n)
+		wg.Add(1)
+		go newsRoutine(queue, Location)
+	}
 
-		for index, _ := range n.Keywords {
-			news_map[n.Titles[index]] = NewsMap{n.Keywords[index], n.Locations[index]}
+	wg.Wait()
+	close(queue)
+
+	for elem := range queue {
+		for index, _ := range elem.Keywords {
+			news_map[elem.Titles[index]] = NewsMap{elem.Keywords[index], elem.Locations[index]}
 		}
 	}
+
 	p := NewsAggPage{Title: "Amazing News Aggregator", News: news_map}
 	t, _ := template.ParseFiles("newsaggtemplate.html")
 	t.Execute(w, p)
