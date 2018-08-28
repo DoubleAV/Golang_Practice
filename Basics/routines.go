@@ -1,39 +1,39 @@
-package main
+// package main
 
-import (
-	"fmt"
-	"sync"
-	"time"
-)
+// import (
+// 	"fmt"
+// 	"sync"
+// 	"time"
+// )
 
-var wg sync.WaitGroup
+// var wg sync.WaitGroup
 
-func cleanup() {
-	if r := recover(); r != nil {
-		fmt.Println("Recovered in cleanup", r)
-	}
-	wg.Done()
-}
+// func cleanup() {
+// 	if r := recover(); r != nil {
+// 		fmt.Println("Recovered in cleanup", r)
+// 	}
+// 	wg.Done()
+// }
 
-func say(s string) {
-	defer cleanup()
+// func say(s string) {
+// 	defer cleanup()
 
-	for i := 0; i < 3; i++ {
-		fmt.Println(s)
-		time.Sleep(time.Millisecond * 100)
-		if i == 2 {
-			panic("Oh dear, a 2")
-		}
-	}
-}
+// 	for i := 0; i < 3; i++ {
+// 		fmt.Println(s)
+// 		time.Sleep(time.Millisecond * 100)
+// 		if i == 2 {
+// 			panic("Oh dear, a 2")
+// 		}
+// 	}
+// }
 
-func main() {
-	wg.Add(1)
-	go say("Hey")
-	wg.Add(1)
-	go say("There")
+// func main() {
+// 	wg.Add(1)
+// 	go say("Hey")
+// 	wg.Add(1)
+// 	go say("There")
 
-	wg.Add(1)
-	go say("Hi")
-	wg.Wait()
-}
+// 	wg.Add(1)
+// 	go say("Hi")
+// 	wg.Wait()
+// }
